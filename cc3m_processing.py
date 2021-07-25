@@ -208,9 +208,6 @@ def translate_annotations(input_fn, output_fn, langs, batch_size=20, buf_size=10
                 print(n_entries)
                 copyfile(output_fn, output_fn + '-backup')
 
-            if n_entries >= 3000:
-                break
-
         # remain
         if len(batch) > 0:
             translate_batch(batch, langs=langs, buf=buf)
@@ -242,8 +239,8 @@ if __name__ == "__main__":
     batch_size = 100
     buf_size = 100
 
-    inf = None
-    sup = None
+    inf = 0
+    sup = 100000
 
     output_fn = f'cc3m_train_translated_{inf}_to_{sup}.jsonl'
 
