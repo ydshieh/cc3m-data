@@ -83,6 +83,10 @@ postfix_targets = [
 def _process_1_annotation(text):
 
     text = text.lower().strip()
+
+    while '...' in text:
+        text = text.replace('...', ',').strip()
+
     # remove trailing '.'
     while text[-1] in ['.', '?', ',', '!', '#', '&']:
         text = text[:-1].strip()
@@ -132,7 +136,10 @@ def translate_batch(batch, langs, buf):
             while not lang_text and n_tried <= 5:
                 try:
                     n_tried += 1
-                    lang_text = translator.translate(en_text, src='en', dest=lang).text.lower()
+                    lang_text = translator.translate(en_text, src='en', dest=lang).text.lower().strip()
+                    # remove trailing '.'
+                    while lang_text[-1] in ['.', '?', ',', '!', '#', '&']:
+                        lang_text = lang_text[:-1].strip()
                     lang_batch[-1] = lang_text
                 except Exception as e:
                     print(e)
@@ -172,7 +179,7 @@ def translate_annotations(input_fn, output_fn, langs, batch_size=20, buf_size=10
 
     with open(input_fn, 'r', encoding='UTF-8') as input_fp:
         for jsonl in input_fp:
-            
+
             entry = json.loads(jsonl)
             if entry['id'] in entry_ids_processed:
                 continue
@@ -231,14 +238,12 @@ if __name__ == "__main__":
 
     input_fn = 'cc3m_train.jsonl'
 
-    # langs = ['fr', 'es', 'it', 'pt', 'ja', 'ko', 'zh-CN']
-    langs = ['fr', 'ja', 'zh-CN']
-    langs = []
-    batch_size = 10
-    buf_size = 20
+    langs = ['fr', 'es', 'pt', 'it', 'ja', 'ko', 'zh-CN']
+    batch_size = 100
+    buf_size = 100
 
-    inf = 0
-    sup = 100
+    inf = None
+    sup = None
 
     output_fn = f'cc3m_train_translated_{inf}_to_{sup}.jsonl'
 
