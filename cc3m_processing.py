@@ -4,66 +4,83 @@ from copy import deepcopy
 from shutil import copyfile
 from googletrans import Translator
 import time
+import re
 
 
 translator = Translator()
-
+to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':', '(', ')', '[', ']', '{', '}']
+regex = re.compile(r'( \'[^ ]*(?: |$))')
 
 prefix_targets = [
-    'a black and white photo of ',
-    'an old photo of ',
-    'an old picture of ',
-    'a photo of ',
-    'a picture of ',
-    'an image of ',
-    'a close up of ',
-    'a group of ',
-    'there is ',
-    'there are ',
-    'this is ',
-    'these are ',
-    'a couple of ',
-    'a few ',
-    'some of ',
-    'some ',
-    'of ',
-    'many ',
-    'several ',
-    'a close-up of ',
-    'close-up of ',
-    'a close up of ',
-    'a close - up of ',
-    'close up of ',
-    'close - up of ',
-    'close - up ',
-    'close-up ',
-    'close up ',
-    'picture of ',
-    'old picture of ',
-    'photo of ',
-    'old photo of ',
-    'image of ',
-    'old image of ',
-    'an old image of ',
-    'an old photograph of ',
-    'a photograph of ',
-    'old photograph of ',
-    'photograph of ',
-    'a bunch of ',
-    'a black and white photo of ',
-    'a black and white image of ',
-    'a black and white picture of ',
-    'a black and white photograph of ',
-    'black and white photo of ',
-    'black and white image of ',
-    'black and white picture of ',
-    'black and white photograph of ',
-    'and ',
-    'of ',
-    'an old portrait of ',
-    'a portrait of ',
-    'old portrait of ',
-    'portrait of '
+    "a black and white photograph of ",
+    "a black and white portrait of ",
+    "a black and white picture of ",
+    "a black and white photo of ",
+    "a black and white image of ",
+
+    "black and white photograph of ",
+    "black and white portrait of ",
+    "black and white picture of ",
+    "black and white photo of ",
+    "black and white image of ",
+
+    "an old photograph of ",
+    "an old portrait of ",
+    "an old picture of ",
+    "an old photo of ",
+    "an old image of ",
+
+    "old photograph of ",
+    "old portrait of ",
+    "old picture of ",
+    "old photo of ",
+    "old image of ",
+
+    "a photograph of ",
+    "a portrait of ",
+    "a picture of ",
+    "a photo of ",
+    "an image of ",
+
+    "photograph of ",
+    "portrait of ",
+    "picture of ",
+    "photo of ",
+    "image of ",
+
+    "a close - up of ",
+    "a close-up of ",
+    "a close up of ",
+    "a closeup of ",
+
+    "close - up of ",
+    "close-up of ",
+    "close up of ",
+    "closeup of ",
+
+    "close - up ",
+    "close-up ",
+    "close up ",
+    "closeup ",
+
+    "a couple of ",
+    "a group of ",
+    "a bunch of ",
+
+    "there are ",
+    "there is ",
+
+    "these are ",
+    "this is ",
+
+    "some of ",
+    "several ",
+    "a few ",
+    "some ",
+    "many ",
+    "and ",
+    "or ",
+    "of ",
 ]
 
 postfix_targets = [
@@ -80,19 +97,36 @@ postfix_targets = [
 ]
 
 
+def remove_space_before_apostophe(text):
+
+    def repl(match_obj):
+
+        assert match_obj.group(0)[0] == ' '
+        return match_obj.group(0)[1:]
+
+    modified = re.sub(regex, repl, text)
+
+    return modified
+
+
 def _process_1_annotation(text):
 
     text = text.lower().strip()
 
     while '...' in text:
-        text = text.replace('...', ',').strip()
+        text = text.replace('...', ' , ').strip()
+    while '--' in text:
+        text = text.replace('--', ' - ').strip()
+    while '  ' in text:
+        text = text.replace('  ', ' ').strip()
 
     # remove trailing '.'
-    while text[-1] in ['.', '?', ',', '!', '#', '&']:
+    while text[-1] in to_remove:
         text = text[:-1].strip()
-
-    while text[0] in ['.', '?', ',', '!', '#', '&']:
+    while text[0] in to_remove:
         text = text[1:].strip()
+
+    text = remove_space_before_apostophe(text)
 
     for target in postfix_targets:
         if text[-len(target):] == target:
@@ -101,11 +135,6 @@ def _process_1_annotation(text):
     for target in prefix_targets:
         if text[:len(target)] == target:
             text = text[len(target):].strip()
-
-    while '  ' in text:
-        text = text.replace('  ', ' ')
-
-    text = text.strip()
 
     return text
 
@@ -138,8 +167,10 @@ def translate_batch(batch, langs, buf):
                     n_tried += 1
                     lang_text = translator.translate(en_text, src='en', dest=lang).text.lower().strip()
                     # remove trailing '.'
-                    while lang_text[-1] in ['.', '?', ',', '!', '#', '&']:
+                    while lang_text[-1] in to_remove:
                         lang_text = lang_text[:-1].strip()
+                    while lang_text[0] in to_remove:
+                        lang_text = lang_text[1:].strip()
                     lang_batch[-1] = lang_text
                 except Exception as e:
                     print(e)
