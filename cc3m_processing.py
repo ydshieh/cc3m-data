@@ -9,7 +9,10 @@ import re
 
 translator = Translator()
 to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':', '(', ')', '[', ']', '{', '}']
+
 regex = re.compile(r'( \'[^ ]*(?: |$))')
+regex_2 = re.compile(r'( \\ \'t(?: |$))')
+apostrophe_to_check = {" 'm", " 'll ", " 'm ", " 're", " 's", " 's ", " 'd", " 're ", " 've ", " 've", " 'd ", " 't ", " 't"}
 
 prefix_targets = [
     "a black and white photograph of ",
@@ -41,12 +44,26 @@ prefix_targets = [
     "a picture of ",
     "a photo of ",
     "an image of ",
+    "a view of ",
+    "a scene of ",
 
     "photograph of ",
     "portrait of ",
     "picture of ",
     "photo of ",
     "image of ",
+    "view of ",
+    "scene of ",
+
+    "a close - up on ",
+    "a close-up on ",
+    "a close up on ",
+    "a closeup on ",
+
+    "close - up on ",
+    "close-up on ",
+    "close up on ",
+    "closeup on ",
 
     "a close - up of ",
     "a close-up of ",
@@ -73,6 +90,7 @@ prefix_targets = [
     "these are ",
     "this is ",
 
+    "a lot of ",
     "some of ",
     "several ",
     "a few ",
@@ -97,14 +115,31 @@ postfix_targets = [
 ]
 
 
-def remove_space_before_apostophe(text):
+def remove_space_before_apostrophe(text):
 
     def repl(match_obj):
 
         assert match_obj.group(0)[0] == ' '
-        return match_obj.group(0)[1:]
+
+        result = match_obj.group(0)
+        if result in apostrophe_to_check:
+            result = result[1:]
+
+        return result
 
     modified = re.sub(regex, repl, text)
+
+    return modified
+
+
+def remove_2(text):
+
+    def repl(match_obj):
+
+        assert match_obj.group(0).startswith(" \\ 't")
+        return match_obj.group(0)[len(" \\"):]
+
+    modified = re.sub(regex_2, repl, text)
 
     return modified
 
@@ -112,6 +147,7 @@ def remove_space_before_apostophe(text):
 def _process_1_annotation(text):
 
     text = text.lower().strip()
+    text = remove_2(text)
 
     while '...' in text:
         text = text.replace('...', ' , ').strip()
@@ -126,7 +162,7 @@ def _process_1_annotation(text):
     while text[0] in to_remove:
         text = text[1:].strip()
 
-    text = remove_space_before_apostophe(text)
+    text = remove_space_before_apostrophe(text)
 
     for target in postfix_targets:
         if text[-len(target):] == target:
