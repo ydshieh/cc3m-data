@@ -5,14 +5,22 @@ from shutil import copyfile
 from googletrans import Translator
 import time
 import re
+from google.cloud import storage
+import argparse
+import logging
 
+
+logging.basicConfig(filename='cc3m-data.log', level=logging.DEBUG)
 
 translator = Translator()
 to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':', '(', ')', '[', ']', '{', '}']
 
 regex = re.compile(r'( \'[^ ]*(?: |$))')
 regex_2 = re.compile(r'( \\ \'t(?: |$))')
-apostrophe_to_check = {" 'm", " 'll ", " 'm ", " 're", " 's", " 's ", " 'd", " 're ", " 've ", " 've", " 'd ", " 't ", " 't"}
+apostrophe_to_check = {
+    " 'm", " 'll ", " 'm ", " 're", " 's", " 's ",
+    " 'd", " 're ", " 've ", " 've", " 'd ", " 't ", " 't"
+}
 
 prefix_targets = [
     "a black and white photograph of ",
@@ -189,13 +197,20 @@ def translate_batch(batch, langs, buf):
 
     en_batch = [process_1_annotation(x['caption']) for x in batch]
     for x, en_text in zip(batch, en_batch):
+        x['to_process'] = True
+        if 'en' in x and x['en'] == en_text:
+            # no need to update
+            x['to_process'] = False
+            continue
         x['en'] = en_text
 
     for lang in langs:
         lang_batch = []
         # Currently, bulk (batch) translation is not working
-        for en_text in en_batch:
+        for x, en_text in zip(batch, en_batch):
             lang_text = None
+            if not x['to_process'] and lang in x:
+                lang_text = x[lang]
             lang_batch.append(lang_text)
             n_tried = 0
             while not lang_text and n_tried <= 5:
@@ -209,7 +224,9 @@ def translate_batch(batch, langs, buf):
                         lang_text = lang_text[1:].strip()
                     lang_batch[-1] = lang_text
                 except Exception as e:
-                    print(e)
+                    logging.debug(f'error for translating caption: {en_text}')
+                    logging.debug(e)
+                    logging.debug('-' * 40)
                     lang_text = None
                     time.sleep(1.0)
             time.sleep(0.3)
@@ -218,6 +235,7 @@ def translate_batch(batch, langs, buf):
             x[lang] = lang_text
 
     for x in batch:
+        del x['to_process']
         # put image url at the end
         image_url = x.pop('image_url')
         x['image_url'] = image_url
@@ -225,20 +243,24 @@ def translate_batch(batch, langs, buf):
         buf.append(jsonl)
 
 
-def translate_annotations(input_fn, output_fn, langs, batch_size=20, buf_size=100, inf=0, sup=None):
+def translate_annotations(
+        input_fn, output_dir, output_fn, langs, batch_size=20, buf_size=100,
+        inf=0, sup=None, storage_params=None):
 
     entry_ids_processed = set()
 
+    output_path = os.path.join(output_dir, output_fn)
+
     # Load previous work done
-    if os.path.isfile(output_fn):
-        with open(output_fn, 'r', encoding='UTF-8') as fp:
+    if os.path.isfile(output_path):
+        with open(output_path, 'r', encoding='UTF-8') as fp:
             for jsonl in fp:
                 assert jsonl.strip()
                 entry = json.loads(jsonl)
                 entry_ids_processed.add(entry['id'])
 
-    print(f'There are already {len(entry_ids_processed)} captions being processed!')
-    print('start processing annotations ...')
+    logging.info(f'There are already {len(entry_ids_processed)} captions being processed!')
+    logging.debug.info('start processing annotations ...')
 
     buf = []
     batch = []
@@ -263,7 +285,7 @@ def translate_annotations(input_fn, output_fn, langs, batch_size=20, buf_size=10
                 batch = []
 
             if n_entries % buf_size == 0 and len(buf) > 0:
-                with open(output_fn, 'a', encoding='UTF-8') as output_fp:
+                with open(output_path, 'a', encoding='UTF-8') as output_fp:
                     # write data to file
                     data = ''
                     for x in buf:
@@ -272,8 +294,11 @@ def translate_annotations(input_fn, output_fn, langs, batch_size=20, buf_size=10
                     # empty the buffer
                     buf = []
 
-                print(n_entries)
-                copyfile(output_fn, output_fn + '-backup')
+                logging.debug.info(n_entries)
+                copyfile(output_path, os.path.join(output_dir, output_fn + '-backup'))
+                if storage_params and n_entries % storage_params['batch_size'] == 0 and n_entries > 0:
+                    bucket_name, blob_name = storage_params['bucket_name'], storage_params['blob_name']
+                    upload_to_storage(bucket_name, blob_name, output_dir, output_fn)
 
         # remain
         if len(batch) > 0:
@@ -284,8 +309,8 @@ def translate_annotations(input_fn, output_fn, langs, batch_size=20, buf_size=10
 
         # remain
         if len(buf) > 0:
-            with open(output_fn, 'a', encoding='UTF-8') as output_fp:
-                print(n_entries)
+            with open(output_path, 'a', encoding='UTF-8') as output_fp:
+                logging.info(n_entries)
                 # write data to file
                 data = ''
                 for x in buf:
@@ -294,24 +319,69 @@ def translate_annotations(input_fn, output_fn, langs, batch_size=20, buf_size=10
                 # empty the buffer
                 buf = []
 
-            print(n_entries)
-            copyfile(output_fn, output_fn + '-backup')
+            logging.info(n_entries)
+            copyfile(output_path, os.path.join(output_dir, output_fn + '-backup'))
+            if storage_params:
+                bucket_name, blob_name = storage_params['bucket_name'], storage_params['blob_name']
+                upload_to_storage(bucket_name, blob_name, output_dir, output_fn)
+
+
+def upload_to_storage(bucket_name, blob_name, f_dir, fn):
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    f_path = os.path.join(f_dir, fn)
+    blob.upload_from_filename(f_path)
+    logging.info(
+        "File {} uploaded to {}.".format(
+            f_path, f'cc3m-data/{fn}'
+        )
+    )
 
 
 if __name__ == "__main__":
 
-    input_fn = 'cc3m_train.jsonl'
+    parser = argparse.ArgumentParser()
 
-    langs = ['fr', 'es', 'pt', 'it', 'ja', 'ko', 'zh-CN']
-    batch_size = 100
-    buf_size = 100
+    parser.add_argument("--input_fn", help="", required=True)
+    parser.add_argument("--batch_size", help="", type=int, default=100)
+    parser.add_argument("--buf_size", help="", type=int, default=100)
+    parser.add_argument("--inf", help="", type=int, required=True)
+    parser.add_argument("--sup", help="", type=int, required=True)
+    parser.add_argument("--output_dir", help="", required=True)
+    parser.add_argument("--bucket_name", help="", required=False)
+    parser.add_argument("--blob_prefix", help="", required=False)
+    parser.add_argument("--upload_batch_size", help="", type=int, required=False)
 
-    inf = 0
-    sup = 100000
+    args = parser.parse_args()
+
+    input_fn = args.input_fn
+    batch_size = args.batch_size
+    buf_size = args.buf_size
+    inf = args.inf
+    sup = args.sup
+    output_dir = args.output_dir
+    bucket_name = args.bucket_name
+    blob_prefix = args.blob_prefix
+    upload_batch_size = args.upload_batch_size
 
     output_fn = f'cc3m_train_translated_{inf}_to_{sup}.jsonl'
+    blob_name = os.path.join(blob_prefix, output_fn)
+
+    langs = ['fr', 'es', 'pt', 'it', 'ja', 'ko', 'zh-CN']
+
+    storage_params = None
+    if bucket_name:
+        assert blob_prefix
+        assert upload_batch_size
+        storage_params = {
+            'bucket_name': bucket_name,
+            'blob_name': blob_name,
+            'batch_size': upload_batch_size
+        }
 
     translate_annotations(
-        input_fn, output_fn, langs, batch_size=batch_size, buf_size=buf_size,
-        inf=inf, sup=sup
+        input_fn, output_dir, output_fn, langs, batch_size=batch_size, buf_size=buf_size,
+        inf=inf, sup=sup, storage_params=storage_params
     )
