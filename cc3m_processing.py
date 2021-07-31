@@ -10,7 +10,7 @@ import argparse
 import logging
 
 
-logging.basicConfig(filename='cc3m-data.log', level=logging.DEBUG)
+logging.basicConfig(filename='cc3m-data.log', level=logging.INFO)
 
 translator = Translator()
 to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':', '(', ')', '[', ']', '{', '}']
@@ -224,12 +224,12 @@ def translate_batch(batch, langs, buf):
                         lang_text = lang_text[1:].strip()
                     lang_batch[-1] = lang_text
                 except Exception as e:
-                    logging.debug(f'error for translating caption: {en_text}')
-                    logging.debug(e)
-                    logging.debug('-' * 40)
+                    logging.info(f'error for translating caption: {en_text}')
+                    logging.info(e)
+                    logging.info('-' * 40)
                     lang_text = None
                     time.sleep(1.0)
-            time.sleep(0.3)
+            time.sleep(0.2)
 
         for x, lang_text in zip(batch, lang_batch):
             x[lang] = lang_text
@@ -244,11 +244,12 @@ def translate_batch(batch, langs, buf):
 
 
 def translate_annotations(
-        input_fn, output_dir, output_fn, langs, batch_size=20, buf_size=100,
+        input_dir, input_fn, output_dir, output_fn, langs, batch_size=20, buf_size=100,
         inf=0, sup=None, storage_params=None):
 
     entry_ids_processed = set()
 
+    input_path = os.path.join(input_dir, input_fn)
     output_path = os.path.join(output_dir, output_fn)
 
     # Load previous work done
@@ -260,13 +261,13 @@ def translate_annotations(
                 entry_ids_processed.add(entry['id'])
 
     logging.info(f'There are already {len(entry_ids_processed)} captions being processed!')
-    logging.debug.info('start processing annotations ...')
+    logging.info('start processing annotations ...')
 
     buf = []
     batch = []
     n_entries = len(entry_ids_processed)
 
-    with open(input_fn, 'r', encoding='UTF-8') as input_fp:
+    with open(input_path, 'r', encoding='UTF-8') as input_fp:
         for jsonl in input_fp:
 
             entry = json.loads(jsonl)
@@ -294,7 +295,7 @@ def translate_annotations(
                     # empty the buffer
                     buf = []
 
-                logging.debug.info(n_entries)
+                logging.info(n_entries)
                 copyfile(output_path, os.path.join(output_dir, output_fn + '-backup'))
                 if storage_params and n_entries % storage_params['batch_size'] == 0 and n_entries > 0:
                     bucket_name, blob_name = storage_params['bucket_name'], storage_params['blob_name']
@@ -344,6 +345,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--input_dir", help="", required=True)
     parser.add_argument("--input_fn", help="", required=True)
     parser.add_argument("--batch_size", help="", type=int, default=100)
     parser.add_argument("--buf_size", help="", type=int, default=100)
@@ -356,6 +358,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    input_dir = args.input_dir
     input_fn = args.input_fn
     batch_size = args.batch_size
     buf_size = args.buf_size
@@ -366,8 +369,10 @@ if __name__ == "__main__":
     blob_prefix = args.blob_prefix
     upload_batch_size = args.upload_batch_size
 
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+
     output_fn = f'cc3m_train_translated_{inf}_to_{sup}.jsonl'
-    blob_name = os.path.join(blob_prefix, output_fn)
 
     langs = ['fr', 'es', 'pt', 'it', 'ja', 'ko', 'zh-CN']
 
@@ -375,6 +380,7 @@ if __name__ == "__main__":
     if bucket_name:
         assert blob_prefix
         assert upload_batch_size
+        blob_name = os.path.join(blob_prefix, output_fn)
         storage_params = {
             'bucket_name': bucket_name,
             'blob_name': blob_name,
@@ -382,6 +388,6 @@ if __name__ == "__main__":
         }
 
     translate_annotations(
-        input_fn, output_dir, output_fn, langs, batch_size=batch_size, buf_size=buf_size,
+        input_dir, input_fn, output_dir, output_fn, langs, batch_size=batch_size, buf_size=buf_size,
         inf=inf, sup=sup, storage_params=storage_params
     )
