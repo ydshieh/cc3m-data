@@ -224,12 +224,12 @@ def translate_batch(batch, langs, buf):
                         lang_text = lang_text[1:].strip()
                     lang_batch[-1] = lang_text
                 except Exception as e:
-                    logging.info(f'error for translating caption: {en_text}')
-                    logging.info(e)
-                    logging.info('-' * 40)
+                    # logging.info(f'error for translating caption: {en_text}')
+                    # logging.info(e)
+                    # logging.info('-' * 40)
                     lang_text = None
                     time.sleep(1.0)
-            time.sleep(0.2)
+            time.sleep(0.3)
 
         for x, lang_text in zip(batch, lang_batch):
             x[lang] = lang_text
