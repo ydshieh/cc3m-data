@@ -11,6 +11,7 @@ from torchvision.transforms import functional as TF
 from multiprocessing import Pool
 from tqdm import tqdm
 import logging
+import json
 
 # Setup
 logging.basicConfig(filename='cc3m_image_download.log', filemode='w', level=logging.INFO)
