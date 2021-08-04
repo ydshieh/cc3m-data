@@ -63,6 +63,8 @@ if __name__ == '__main__':
     if not os.path.isdir(target_dir):
         os.makedirs(target_dir, exist_ok=True)
 
+    cc3m_jsonl_file_path = './cc3m_valid.jsonl'
+
     with open(cc3m_jsonl_file_path, 'r', encoding='UTF-8') as fp:
 
         for line in fp:
