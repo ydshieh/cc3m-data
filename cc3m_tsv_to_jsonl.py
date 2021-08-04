@@ -11,10 +11,10 @@ default_entry = {
 }
 
 
-def convert_to_jsonl(cc3m_chunked_df):
+def convert_to_jsonl(cc3m_chunked_df, output_fn):
 
     idx = -1
-    with open('cc3m_train.jsonl', 'w', encoding='UTF-8') as fp:
+    with open(output_fn, 'w', encoding='UTF-8') as fp:
 
         for chunk in cc3m_chunked_df:
             for _, row in list(chunk.iterrows()):
@@ -39,4 +39,7 @@ def convert_to_jsonl(cc3m_chunked_df):
 if __name__ == "__main__":
 
     df = pd.read_csv('cc3m_captions_train.tsv', sep='\t', iterator=True, chunksize=50000, header=None)
-    convert_to_jsonl(df)
+    convert_to_jsonl(df, output_fn='cc3m_train.jsonl')
+
+    df = pd.read_csv('cc3m_captions_valid.tsv', sep='\t', iterator=True, chunksize=50000, header=None)
+    convert_to_jsonl(df, output_fn='cc3m_valid.jsonl')
