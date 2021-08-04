@@ -69,10 +69,11 @@ if __name__ == '__main__':
 
         for line in fp:
 
+            entry = json.loads(line)
+
             if entry['id'] >= 20:
                 break
 
-            entry = json.loads(line)
             buf.append((entry, target_dir, fn_prefix))
 
             if len(buf) >= buf_size:
