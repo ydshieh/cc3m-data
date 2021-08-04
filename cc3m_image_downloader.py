@@ -48,7 +48,7 @@ def process(entry, target_dir, fn_prefix):
 
     except Exception as e:
         logging.info(" ".join(repr(e).splitlines()))
-        logging.error(url)
+        logging.error(image_url)
 
 
 if __name__ == '__main__':
