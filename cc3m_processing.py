@@ -23,6 +23,8 @@ apostrophe_to_check = {
     " 'd", " 're ", " 've ", " 've", " 'd ", " 't ", " 't"
 }
 
+regex_3 = re.compile(r'robert|ロバート|로버트|罗伯特', flags=re.IGNORECASE)
+
 prefix_targets = [
     "a black and white photograph of ",
     "a black and white portrait of ",
@@ -212,7 +214,17 @@ def process_1_annotation(text):
 
 def translate_text(text, src, dest):
 
+    while '<PERSON>' in text:
+
+        start = text.find('<PERSON>')
+        end = start + len('<PERSON>')
+
+        placeholder = 'Robert'
+        text = text[:start] + placeholder + text[end:]
+
     translated = translator.translate(text, src=src, dest=dest).text
+    translated = regex_3.sub(repl='<PERSON>', string=translated)
+
     return translated
 
 
@@ -235,11 +247,23 @@ def translate_batch(batch, langs, buf):
             if not x['to_process'] and lang in x:
                 lang_text = x[lang]
             lang_batch.append(lang_text)
+
+            # Ignore examples having too many <PERSON>
+            _nb = en_text.count('<PERSON>')
+            if _nb > 4:
+                continue
+
             n_tried = 0
             while not lang_text and n_tried <= 5:
                 try:
                     n_tried += 1
                     lang_text = translate_text(en_text, src='en', dest=lang).strip()
+
+                    # Ignore translations not having the same number of <PERSON>
+                    _nb_new = lang_text.count('<PERSON>')
+                    if _nb_new != _nb:
+                        break
+
                     # remove trailing '.'
                     while lang_text[-1] in to_remove:
                         lang_text = lang_text[:-1].strip()
