@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(filename='cc3m-data.log', level=logging.INFO)
 
 translator = Translator()
-to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':', '(', ')', '[', ']', '{', '}']
+to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':']
 
 regex = re.compile(r'( \'[^ ]*(?: |$))', flags=re.IGNORECASE)
 # Used to deal with the cases like " \\ 't ", for example, "won \\ 't need".
