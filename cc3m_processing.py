@@ -15,9 +15,9 @@ logging.basicConfig(filename='cc3m-data.log', level=logging.INFO)
 translator = Translator()
 to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':', '(', ')', '[', ']', '{', '}']
 
-regex = re.compile(r'( \'[^ ]*(?: |$))')
+regex = re.compile(r'( \'[^ ]*(?: |$))', flags=re.IGNORECASE)
 # Used to deal with the cases like " \\ 't ", for example, "won \\ 't need".
-regex_2 = re.compile(r'( \\ \'t(?: |$))')
+regex_2 = re.compile(r'( \\ \'t(?: |$))', flags=re.IGNORECASE)
 apostrophe_to_check = {
     " 'm", " 'll ", " 'm ", " 're", " 's", " 's ",
     " 'd", " 're ", " 've ", " 've", " 'd ", " 't ", " 't"
@@ -131,12 +131,12 @@ def remove_space_before_apostrophe(text):
         assert match_obj.group(0)[0] == ' '
 
         result = match_obj.group(0)
-        if result in apostrophe_to_check:
+        if result.lower() in apostrophe_to_check:
             result = result[1:]
 
         return result
 
-    modified = re.sub(regex, repl, text)
+    modified = re.sub(regex, repl, text, flags=re.IGNORECASE)
 
     return modified
 
@@ -145,17 +145,17 @@ def remove_2(text):
 
     def repl(match_obj):
 
-        assert match_obj.group(0).startswith(" \\ 't")
+        assert match_obj.group(0).lower().startswith(" \\ 't")
         return match_obj.group(0)[len(" \\"):]
 
-    modified = re.sub(regex_2, repl, text)
+    modified = re.sub(regex_2, repl, text, flags=re.IGNORECASE)
 
     return modified
 
 
 def _process_1_annotation(text):
 
-    text = text.lower().strip()
+    text = text.strip()
     text = remove_2(text)
 
     while '...' in text:
@@ -171,14 +171,14 @@ def _process_1_annotation(text):
     while text[0] in to_remove:
         text = text[1:].strip()
 
-    text = remove_space_before_apostrophe(text)
+    text = remove_space_before_apostrophe(text)  # TODO: check case
 
     for target in postfix_targets:
-        if text[-len(target):] == target:
+        if text[-len(target):].lower() == target:
             text = text[:-len(target)].strip()
 
     for target in prefix_targets:
-        if text[:len(target)] == target:
+        if text[:len(target)].lower() == target:
             text = text[len(target):].strip()
 
     return text
@@ -217,7 +217,7 @@ def translate_batch(batch, langs, buf):
             while not lang_text and n_tried <= 5:
                 try:
                     n_tried += 1
-                    lang_text = translator.translate(en_text, src='en', dest=lang).text.lower().strip()
+                    lang_text = translator.translate(en_text, src='en', dest=lang).text.strip()
                     # remove trailing '.'
                     while lang_text[-1] in to_remove:
                         lang_text = lang_text[:-1].strip()
