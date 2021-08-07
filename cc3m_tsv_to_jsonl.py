@@ -11,12 +11,12 @@ default_entry = {
 }
 
 
-def convert_to_jsonl(cc3m_chunked_df, output_fn):
+def convert_to_jsonl(chunked_df, output_fn):
 
     idx = -1
     with open(output_fn, 'w', encoding='UTF-8') as fp:
 
-        for chunk in cc3m_chunked_df:
+        for chunk in chunked_df:
             for _, row in list(chunk.iterrows()):
 
                 idx += 1
