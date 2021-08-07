@@ -48,6 +48,22 @@ prefix_targets = [
     "old photo of ",
     "old image of ",
 
+    "a photograph - like illustration of ",
+    "a photograph-like illustration of ",
+    "a photograph like illustration of ",
+    "a photographic illustration of ",
+    "a colorful illustration of ",
+    "a color illustration of ",
+    "an illustration of ",
+
+    "photograph - like illustration of ",
+    "photograph-like illustration of ",
+    "photograph like illustration of ",
+    "photographic illustration of ",
+    "colorful illustration of ",
+    "color illustration of ",
+    "illustration of ",
+
     "a photograph of ",
     "a portrait of ",
     "a picture of ",
