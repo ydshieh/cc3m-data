@@ -210,6 +210,12 @@ def process_1_annotation(text):
     return text
 
 
+def translate_text(text, src, dest):
+
+    translated = translator.translate(text, src=src, dest=dest).text
+    return translated
+
+
 def translate_batch(batch, langs, buf):
 
     en_batch = [process_1_annotation(x['caption']) for x in batch]
@@ -233,7 +239,7 @@ def translate_batch(batch, langs, buf):
             while not lang_text and n_tried <= 5:
                 try:
                     n_tried += 1
-                    lang_text = translator.translate(en_text, src='en', dest=lang).text.strip()
+                    lang_text = translate_text(en_text, src='en', dest=lang).strip()
                     # remove trailing '.'
                     while lang_text[-1] in to_remove:
                         lang_text = lang_text[:-1].strip()
