@@ -16,6 +16,7 @@ translator = Translator()
 to_remove = ['.', '?', ',', '!', '&', '_', '-', '=', ';', ':', '(', ')', '[', ']', '{', '}']
 
 regex = re.compile(r'( \'[^ ]*(?: |$))')
+# Used to deal with the cases like " \\ 't ", for example, "won \\ 't need".
 regex_2 = re.compile(r'( \\ \'t(?: |$))')
 apostrophe_to_check = {
     " 'm", " 'll ", " 'm ", " 're", " 's", " 's ",
