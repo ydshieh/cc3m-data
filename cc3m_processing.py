@@ -152,7 +152,7 @@ def remove_space_before_apostrophe(text):
 
         return result
 
-    modified = re.sub(regex, repl, text, flags=re.IGNORECASE)
+    modified = regex.sub(repl, text)
 
     return modified
 
@@ -164,7 +164,7 @@ def remove_2(text):
         assert match_obj.group(0).lower().startswith(" \\ 't")
         return match_obj.group(0)[len(" \\"):]
 
-    modified = re.sub(regex_2, repl, text, flags=re.IGNORECASE)
+    modified = regex_2.sub(repl, text)
 
     return modified
 
