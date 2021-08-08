@@ -16,7 +16,7 @@ bucket_name = '[...]'
 blob_prefix = '[...]'
 upload_batch_size = 10000
 
-command = f'nohup python -u cc3m_processing.py --input_dir "./" --input_fn "cc3m_train.jsonl" --inf {start} --sup {end} --output_dir "./" --batch_size 100 --buf_size 100 --bucket_name {bucket_nam$
+command = f'nohup python -u cc3m_processing.py --input_dir "./" --input_fn "cc3m_train.jsonl" --inf {start} --sup {end} --output_dir "./" --batch_size 100 --buf_size 100 --bucket_name {bucket_name} --blob_prefix {blob_prefix} --upload_batch_size {upload_batch_size}'
 print(command)
 os.system(command)
 
