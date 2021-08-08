@@ -284,8 +284,12 @@ def translate_batch(batch, langs, buf):
     for x in batch:
         del x['to_process']
         # put image url at the end
-        image_url = x.pop('image_url')
-        x['image_url'] = image_url
+        if 'image_url' in x:
+            image_url = x.pop('image_url')
+            x['image_url'] = image_url
+        if '_id' in x:
+            _id = x.pop('_id')
+            x['_id'] = _id
         jsonl = json.dumps(x, ensure_ascii=False, indent=None)
         buf.append(jsonl)
 
@@ -305,7 +309,7 @@ def translate_annotations(
             for jsonl in fp:
                 assert jsonl.strip()
                 entry = json.loads(jsonl)
-                entry_ids_processed.add(entry['id'])
+                entry_ids_processed.add(entry['_id'] if '_id' in entry else entry['id'])
 
     logging.info(f'There are already {len(entry_ids_processed)} captions being processed!')
     logging.info('start processing annotations ...')
@@ -318,11 +322,14 @@ def translate_annotations(
         for jsonl in input_fp:
 
             entry = json.loads(jsonl)
-            if entry['id'] in entry_ids_processed:
+
+            _id = entry['_id'] if '_id' in entry else entry['id']
+
+            if _id in entry_ids_processed:
                 continue
-            if entry['id'] < inf:
+            if _id < inf:
                 continue
-            if sup is not None and entry['id'] >= sup:
+            if sup is not None and _id >= sup:
                 break
 
             batch.append(entry)
