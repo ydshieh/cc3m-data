@@ -275,8 +275,8 @@ def translate_batch(batch, langs, buf):
                     # logging.info(e)
                     # logging.info('-' * 40)
                     lang_text = None
-                    time.sleep(1.0)
-            time.sleep(0.3)
+                    time.sleep(0.75)
+            time.sleep(0.2)
 
         for x, lang_text in zip(batch, lang_batch):
             x[lang] = lang_text
@@ -374,11 +374,11 @@ def translate_annotations(
                 # empty the buffer
                 buf = []
 
-            logging.info(n_entries)
-            copyfile(output_path, os.path.join(output_dir, output_fn + '-backup'))
-            if storage_params:
-                bucket_name, blob_name = storage_params['bucket_name'], storage_params['blob_name']
-                upload_to_storage(bucket_name, blob_name, output_dir, output_fn)
+        logging.info(n_entries)
+        copyfile(output_path, os.path.join(output_dir, output_fn + '-backup'))
+        if storage_params:
+            bucket_name, blob_name = storage_params['bucket_name'], storage_params['blob_name']
+            upload_to_storage(bucket_name, blob_name, output_dir, output_fn)
 
 
 def upload_to_storage(bucket_name, blob_name, f_dir, fn):
@@ -390,7 +390,7 @@ def upload_to_storage(bucket_name, blob_name, f_dir, fn):
     blob.upload_from_filename(f_path)
     logging.info(
         "File {} uploaded to {}.".format(
-            f_path, f'cc3m-data/{fn}'
+            f_path, f'{blob_name}/{fn}'
         )
     )
 
