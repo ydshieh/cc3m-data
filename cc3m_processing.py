@@ -214,6 +214,7 @@ def process_1_annotation(text):
 
 def translate_text(text, src, dest):
 
+    has_person_placeholder = False
     while '<PERSON>' in text:
 
         start = text.find('<PERSON>')
@@ -222,8 +223,12 @@ def translate_text(text, src, dest):
         placeholder = 'Robert'
         text = text[:start] + placeholder + text[end:]
 
+        has_person_placeholder = True
+
     translated = translator.translate(text, src=src, dest=dest).text
-    translated = regex_3.sub(repl='<PERSON>', string=translated)
+
+    if has_person_placeholder:
+        translated = regex_3.sub(repl='<PERSON>', string=translated)
 
     return translated
 
