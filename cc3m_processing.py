@@ -217,6 +217,10 @@ def translate_text(text, src, dest):
     has_person_placeholder = False
     while '<PERSON>' in text:
 
+        # to avoid possible mistake
+        if 'robert' in text.lower():
+            return ''
+
         start = text.find('<PERSON>')
         end = start + len('<PERSON>')
 
@@ -263,6 +267,9 @@ def translate_batch(batch, langs, buf):
                 try:
                     n_tried += 1
                     lang_text = translate_text(en_text, src='en', dest=lang).strip()
+
+                    if lang_text == '':
+                        break
 
                     # Ignore translations not having the same number of <PERSON>
                     _nb_new = lang_text.count('<PERSON>')
