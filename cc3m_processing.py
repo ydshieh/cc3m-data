@@ -287,7 +287,7 @@ def translate_batch(batch, langs, buf):
                     # logging.info(e)
                     # logging.info('-' * 40)
                     lang_text = None
-                    time.sleep(0.75)
+                    time.sleep(0.5)
             time.sleep(0.2)
 
         for x, lang_text in zip(batch, lang_batch):
