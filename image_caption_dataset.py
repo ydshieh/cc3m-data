@@ -107,8 +107,8 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.TRAIN,
                     # These kwargs will be passed to _generate_examples
                     gen_kwargs={
-                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_train_translated.jsonl'),
-                        "image_dir": os.path.join(data_dir, f'{self.config.name}_images', f'{self.config.name}_train'),
+                        "jsonl_dir": os.path.join(data_dir, f'{self.config.name}_jsonls', 'train'),
+                        "image_dir": os.path.join(data_dir, f'{self.config.name}_images', 'train'),
                         "split": "train",
                     }
                 )
@@ -117,8 +117,8 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     # These kwargs will be passed to _generate_examples
                     gen_kwargs={
-                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_valid_translated.jsonl'),
-                        "image_dir": os.path.join(data_dir, f'{self.config.name}_images', f'{self.config.name}_valid'),
+                        "jsonl_dir": os.path.join(data_dir, f'{self.config.name}_jsonls', 'valid'),
+                        "image_dir": os.path.join(data_dir, f'{self.config.name}_images', 'valid'),
                         "split": "valid",
                     },
                 )
@@ -127,8 +127,8 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.TEST,
                     # These kwargs will be passed to _generate_examples
                     gen_kwargs={
-                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_test_translated.jsonl'),
-                        "image_dir": os.path.join(data_dir, f'{self.config.name}_images', f'{self.config.name}_test'),
+                        "jsonl_dir": os.path.join(data_dir, f'{self.config.name}_jsonls', 'test'),
+                        "image_dir": os.path.join(data_dir, f'{self.config.name}_images', 'test'),
                         "split": "test",
                     },
                 )
@@ -141,7 +141,7 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
 
     def _generate_examples(
         # method parameters are unpacked from `gen_kwargs` as given in `_split_generators`
-        self, jsonl_file, image_dir, split
+        self, jsonl_dir, image_dir, split
     ):
         """ Yields examples as (key, example) tuples. """
         # This method handles input defined in _split_generators to yield (key, example) tuples from the dataset.
@@ -150,31 +150,35 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
         if split == 'dev':
             split = 'valid'
 
-        with open(jsonl_file, 'r', encoding='UTF-8') as fp:
+        fns = [os.path.join(jsonl_dir, fn) for fn in os.listdir(jsonl_dir) if os.path.isfile(os.path.join(jsonl_dir, fn)) and fn.endswith("jsonl")]
 
-            for id_, line in enumerate(fp):
+        for jsonl_file in fns:
 
-                ex = json.loads(line)
+            with open(jsonl_file, 'r', encoding='UTF-8') as fp:
 
-                example = {
-                    "image_id": ex['image_id'],
-                    "id": ex["id"],
-                    "caption": ex["caption"],
-                }
+                for id_, line in enumerate(fp):
 
-                for lang in self.config.langs:
-                    example[lang] = ex[lang]
+                    ex = json.loads(line)
 
-                if 'image_url' in ex:
-                    example['image_url'] = ex['image_url']
-                else:
-                    example['image_url'] = ''
+                    example = {
+                        "image_id": ex['image_id'],
+                        "id": ex["id"],
+                        "caption": ex["caption"],
+                    }
 
-                fn = f'{str(ex["image_id"]).zfill(self.config.zfill)}.jpg'
-                if self.config.prefix_before_image_fn:
-                    fn = f'{self.config.name}_{split}_' + fn
+                    for lang in self.config.langs:
+                        example[lang] = ex[lang]
 
-                image_file = os.path.join(image_dir, fn)
-                example['image_file'] = image_file
+                    if 'image_url' in ex:
+                        example['image_url'] = ex['image_url']
+                    else:
+                        example['image_url'] = ''
 
-                yield id_, example
+                    fn = f'{str(ex["image_id"]).zfill(self.config.zfill)}.jpg'
+                    if self.config.prefix_before_image_fn:
+                        fn = f'{self.config.name}_{split}_' + fn
+
+                    image_file = os.path.join(image_dir, fn)
+                    example['image_file'] = image_file
+
+                    yield id_, example
