@@ -107,7 +107,7 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.TRAIN,
                     # These kwargs will be passed to _generate_examples
                     gen_kwargs={
-                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_translated_train.jsonl'),
+                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_train_translated.jsonl'),
                         "image_dir": os.path.join(data_dir, f'{self.config.name}_images', f'{self.config.name}_train'),
                         "split": "train",
                     }
@@ -117,7 +117,7 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     # These kwargs will be passed to _generate_examples
                     gen_kwargs={
-                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_translated_valid.jsonl'),
+                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_valid_translated.jsonl'),
                         "image_dir": os.path.join(data_dir, f'{self.config.name}_images', f'{self.config.name}_valid'),
                         "split": "valid",
                     },
@@ -127,7 +127,7 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.TEST,
                     # These kwargs will be passed to _generate_examples
                     gen_kwargs={
-                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_translated_test.jsonl'),
+                        "jsonl_file": os.path.join(data_dir, f'{self.config.name}_test_translated.jsonl'),
                         "image_dir": os.path.join(data_dir, f'{self.config.name}_images', f'{self.config.name}_test'),
                         "split": "test",
                     },
