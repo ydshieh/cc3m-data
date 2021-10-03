@@ -12,11 +12,11 @@ dataset = load_dataset(
     dataset_name, dataset_config_name, cache_dir=cache_dir, keep_in_memory=keep_in_memory, data_dir=data_dir
 )
 
-# for example in dataset["train"]:
-#     print(example)
-#     with Image.open(example['image_file']) as image:
-#         image.show()
-#     break
+for example in dataset["train"]:
+    print(example)
+    # with Image.open(example['image_file']) as image:
+    #     image.show()
+    break
 
 for _idx, example in enumerate(dataset["validation"]):
     if _idx >= 5:
@@ -24,4 +24,3 @@ for _idx, example in enumerate(dataset["validation"]):
     print(example)
     with Image.open(example['image_file']) as image:
         image.show()
-

@@ -1,4 +1,5 @@
 from datasets import load_dataset
+from PIL import Image
 
 
 dataset_name = "image_caption_dataset.py"
@@ -13,8 +14,13 @@ dataset = load_dataset(
 
 for example in dataset["train"]:
     print(example)
+    # with Image.open(example['image_file']) as image:
+    #     image.show()
     break
 
-for example in dataset["validation"]:
+for _idx, example in enumerate(dataset["validation"]):
+    if _idx >= 5:
+        break
     print(example)
-    break
+    with Image.open(example['image_file']) as image:
+        image.show()
