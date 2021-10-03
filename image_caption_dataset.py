@@ -181,4 +181,7 @@ class ImageCaptionDataset(datasets.GeneratorBasedBuilder):
                     image_file = os.path.join(image_dir, fn)
                     example['image_file'] = image_file
 
+                    if not os.path.isfile(image_file):
+                        continue
+
                     yield id_, example
